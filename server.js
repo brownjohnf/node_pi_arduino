@@ -10,10 +10,19 @@ var Haml = require("haml"),
 
 
 var arduino = require('duino'),
-    board = new arduino.Board({
+    board, sensor;
+
+board = new arduino.Board({
       device: "ACM"
     });
+sensor = new arduino.Sensor({
+      board: board,
+      pin: "A0",
+      throttle: 1000
+    });
 
+
+var aPins = {}
 var pins = {};
 
 for ( i = 2; i < 13; i++) {
@@ -22,6 +31,18 @@ for ( i = 2; i < 13; i++) {
     pin: i,
   }); 
 }
+
+for ( i = 0; i < 6; i++) {
+  var pinId = "A" + new String(i);
+
+  aPins[pinId] = new arduino.Sensor({
+    board: board,
+    pin: pinId,
+    throttle: 1000
+  });
+}
+
+console.log(aPins);
 
 app.set('port', process.env.PORT || 3000);
 app.use(express.favicon());
@@ -41,6 +62,61 @@ app.get("/", function( req, res ) {
 });
 
 io.sockets.on('connection', function( socket ) {
+  aPins["A0"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value,
+      pinId: "A0"
+    }
+    socket.emit("sensor_data", data);
+  });
+  aPins["A1"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value,
+      pinId: "A1"
+    }
+    socket.emit("sensor_data", data);
+  });
+  aPins["A2"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value,
+      pinId: "A2"
+    }
+    socket.emit("sensor_data", data);
+  });
+  aPins["A3"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value,
+      pinId: "A3"
+    }
+    socket.emit("sensor_data", data);
+  });
+  aPins["A4"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value,
+      pinId: "A4"
+    }
+    socket.emit("sensor_data", data);
+  });
+  aPins["A5"].on('read', function(err, value) {
+    value = +value;
+    // |value| is the raw sensor output
+    var data = {
+      value: value / 1023.0 * 100,
+      pinId: "A5"
+    }
+    socket.emit("sensor_data", data);
+  });
+
   socket.on('update-pins', function( data ) {
     
     for( var pin in data ) {
