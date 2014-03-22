@@ -1,93 +1,157 @@
 !!!
-%html
+%html{ lang: "en" }
   %head
     %title Home Control
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
     %script{ src: "//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"  }
     %script{ src: "//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js" }
-    %stylesheet{ href: "//cdnjs.cloudflare.com/ajax/libs/skeleton/1.2/skeleton.min.css" }
+    %script{ src: "/js/bootstrap.min.js" }
+    %link{ rel: "stylesheet", href: "/css/bootstrap-min.css" }
     :css
-      * {
-        font-family: "Helvetica", sans-serif;
-      }
       .center {
         text-align: center;
       }
-      button.btn-block, a.btn-block {
-        display: block;
-        width: 100%;
-      }
-      button.btn-large, a.btn-large {
-        margin-top: 1em;
-        padding: 1em;
-        font-size: 2em;
-      }
-      button, a {
-        cursor: pointer;
-      }
-      [data-pin-status="1"] {
-        background-color: darkgreen;
-        color: white;
-      }
-      [data-pin-status="0"] {
-        background-color: maroon;
-        color: white;
-      }
   %body
+    .navbar.navbar-default
+      .container-fluid
+        .navbar-header
+          %button.navbar-toggle
+            %span.sr-only toggle nav
+            %span.icon-bar
+            %span.icon-bar
+            %span.icon-bar
+          %a.navbar-brand Home Control
+
     .container#update-pins
       .row
-        .sixteen.columns
-          <button class="btn-block btn-large pin" data-pin-id=11> Lamp On/Off </button>
+        .col-xs-4.col-md-1
+          <a class="btn pin" data-pin-id=11>Lamp</button>
+        .col-xs-8.col-md-5
+          .panel
+            <div class="btn-group btn-group-justified" data-pin-id="11">
+              %a.btn.btn-success on
+              %a.btn.btn-danger off
+              %a.btn.btn-warning.active auto
+            </div>
+        .col-xs-4.col-md-1
+          <a class="btn pin" data-pin-id=12>Christ. Lts.</button>
+        .col-xs-8.col-md-5
+          .panel
+            <div class="btn-group btn-group-justified" data-pin-id="12">
+              %a.btn.btn-success on
+              %a.btn.btn-danger off
+              %a.btn.btn-warning.active auto
+            </div>
+
+    .container#sensors
       .row
-        .sixteen.columns
-          <button class="btn-block btn-large pin" data-pin-id=12> Christmas Lights On/Off </button>
-      .row.sensors
-        .eight.columns
-          <div data-pin-id="A0">
-            .reading.center
-              A0
-          </div>
-        .eight.columns
-          <div data-pin-id="A1">
-            .reading.center
-              A1
-        .eight.columns
-          <div data-pin-id="A2">
-            .reading.center
-              A2
-        .eight.columns
-          <div data-pin-id="A3">
-            .reading.center
-              A3
-        .eight.columns
-          <div data-pin-id="A4">
-            .reading.center
-              A4
-        .eight.columns
-          Light (%):
-          <div data-pin-id="A5">
-            .reading.center
-              A5
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 light
+            <div data-pin-id="A0">
+              %span.reading
+                A0
+              %
+            </div>
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 &nbsp;
+            <div data-pin-id="A1">
+              .reading
+                A1
+            </div>
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 &nbsp
+            <div data-pin-id="A2">
+              %span.reading.center
+                A2
+            </div>
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 &nbsp;
+            <div data-pin-id="A3">
+              %span.reading
+                A3
+            </div>
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 &nbsp;
+            <div data-pin-id="A4">
+              .reading
+                A4
+            </div>
+        .col-xs-4.col-sm-2
+          .well.well-sm.center
+            %h4 &nbsp;
+            <div data-pin-id="A5">
+              .reading
+                A5
+            </div>
+    .container
+      .row
+        .col-xs-12
+          .alert.alert-info#messages
+            Loaded successfully.
 
     :javascript
-      var socket = io.connect('http://192.168.1.3:3000');
+      var socket = io.connect(window.location.protocol + "//" + window.location.host);
 
       socket.on('message', function(data) {
-        console.log(data);
+        $("#messages").text(data);
       });
 
       socket.on("sensor_data", function(data) {
-        $(".sensors").find('[data-pin-id="' + data.pinId + '"] .reading').text(data.value);
+
+        var val = Math.round(data.value / 1024 * 100)
+
+        var reading = $("#sensors")
+          .find('[data-pin-id="' + data.pinId + '"] .reading')
+          ;
+
+        reading
+          .text(val)
+          ;
+
+
       })
 
       $(function() {
         var pins = $(".pin");
+
+        $("#update-pins .btn").on("click", function(event) {
+          var parent = $(this).closest(".btn-group");
+          var pinId = parent.attr("data-pin-id");
+          console.log("pinId: " + pinId);
+
+          var command = $(this).text();
+          console.log("command: " + command);
+
+          var data = {};
+          data[pinId] = {};
+
+          if ( command == "on" ) {
+            data[pinId] = 1;
+          } else {
+            data[pinId] = 0;
+          }
+
+          console.log(data);
+          socket.emit('update-pins', data );
+
+          parent.find(".btn").removeClass("active");
+          $(this).addClass("active");
+        })
 
         $("#update-pins .pin").on('click', function( event ) {
           event.preventDefault();
 
           var data = {};
           var pinId = $(this).attr("data-pin-id");
-          console.log($(this));
 
           var action;
           if ( $(this).attr("data-pin-status") == 1 ) {
@@ -96,13 +160,17 @@
             action = 1;
           }
 
-          console.log(data);
-
           data[pinId] = action;
           socket.emit('update-pins', data );
 
 
           $(this).attr("data-pin-status", action);
+
+          if ( action == 0 ) {
+            $(this).removeClass("btn-success");
+          } else {
+            $(this).addClass("btn-success");
+          }
         });
       });
 

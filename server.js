@@ -13,14 +13,14 @@ var arduino = require('duino'),
     board, sensor;
 
 board = new arduino.Board({
-      device: "ACM"
-    });
-sensor = new arduino.Sensor({
-      board: board,
-      pin: "A0",
-      throttle: 1000
-    });
+  device: "ACM"
+});
 
+sensor = new arduino.Sensor({
+  board: board,
+  pin: "A0",
+  throttle: 1000
+});
 
 var aPins = {}
 var pins = {};
@@ -42,8 +42,6 @@ for ( i = 0; i < 6; i++) {
   });
 }
 
-console.log(aPins);
-
 app.set('port', process.env.PORT || 3000);
 app.use(express.favicon());
 app.use(express.logger('dev'));
@@ -51,16 +49,18 @@ app.use(express.json());
 app.use(express.urlencoded());
 app.use(express.methodOverride());
 app.use(app.router);
-//app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname)));
 
 server.listen(process.env.PORT || 3000);
 
+console.log("defining routes");
 app.get("/", function( req, res ) {
   var haml = fs.readFileSync("index.html.haml", "utf8");
 
   res.send(Haml.render(haml));
 });
 
+console.log("starting socket.io");
 io.sockets.on('connection', function( socket ) {
   aPins["A0"].on('read', function(err, value) {
     value = +value;
@@ -111,27 +111,31 @@ io.sockets.on('connection', function( socket ) {
     value = +value;
     // |value| is the raw sensor output
     var data = {
-      value: value / 1023.0 * 100,
+      value: value,
       pinId: "A5"
     }
     socket.emit("sensor_data", data);
   });
 
   socket.on('update-pins', function( data ) {
-    
+    var message;
+
     for( var pin in data ) {
       console.log("pin data: " + data[pin]);
+
       if ( data[pin] === 1 ) {
-        console.log('Turning pin ' + pin + ' on.');
+        message = 'Turning pin ' + pin + ' on.';
+
         pins[pin].on();
       } else {
-        console.log('Turning pin ' + pin + ' off.');
+        message = 'Turning pin ' + pin + ' off.';
+        
         pins[pin].off();
       }
     }
     // We can add error handling once we figure out how
     // duino handles errors.
-    socket.emit('message', "Your request has been processed.");
+    socket.emit('message', message);
   });
 });
 
